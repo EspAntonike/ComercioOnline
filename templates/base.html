@@ -3,24 +3,50 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>{% block title %}Mi Tienda Afiliados{% endblock %}</title>
-  <!-- Tailwind CDN -->
+  <title>{% block title %}ModaRopa - Tu tienda online{% endblock %}</title>
+
+  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <meta name="color-scheme" content="light dark">
+  <meta name="color-scheme" content="light">
+
   <style>
-    .card-hover { transition: transform .2s, box-shadow .2s; }
-    .card-hover:hover { transform: translateY(-6px); box-shadow: 0 12px 30px rgba(0,0,0,.12); }
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    .card-hover { 
+      transition: transform .2s, box-shadow .2s; 
+    }
+    .card-hover:hover { 
+      transform: translateY(-6px); 
+      box-shadow: 0 10px 25px rgba(0,0,0,.08); 
+    }
+    /* Botones estilo Shein */
+    .btn-main {
+      background: black;
+      color: white;
+      font-weight: 500;
+      transition: background .2s;
+    }
+    .btn-main:hover {
+      background: #e11d48; /* rosa intenso */
+    }
+    .btn-secondary {
+      border: 1px solid #d1d5db;
+      color: #374151;
+    }
+    .btn-secondary:hover {
+      background: #f9fafb;
+    }
   </style>
 </head>
-<body class="min-h-screen bg-gray-50 text-slate-800">
+<body class="min-h-screen bg-white text-gray-800">
   <!-- Navbar -->
-  <header class="sticky top-0 bg-white shadow-sm z-10">
-    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-      <a href="/" class="text-2xl font-bold text-indigo-600">🛒 AfiliadosShop</a>
-      <nav class="hidden md:flex gap-6 text-sm font-medium text-slate-600">
-        <a class="hover:text-indigo-600" href="/">Inicio</a>
-        <a class="hover:text-indigo-600" href="#">Categorías</a>
-        <a class="hover:text-indigo-600" href="#">Ofertas</a>
+  <header class="sticky top-0 bg-white shadow z-20">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+      <a href="/" class="text-2xl font-extrabold tracking-wide text-black">MODAROPA</a>
+      <nav class="hidden md:flex gap-6 text-sm font-medium">
+        <a class="hover:text-pink-600" href="/">Inicio</a>
+        <a class="hover:text-pink-600" href="/index">Catálogo</a>
         {% block nav %}{% endblock %}
       </nav>
     </div>
@@ -32,23 +58,22 @@
   </main>
 
   <!-- Footer -->
-  <footer class="bg-white border-t mt-16">
-    <div class="max-w-7xl mx-auto px-4 py-8 grid md:grid-cols-3 gap-8 text-sm text-slate-600">
+  <footer class="bg-gray-50 border-t mt-16">
+    <div class="max-w-7xl mx-auto px-4 py-10 grid md:grid-cols-3 gap-8 text-sm text-gray-600">
       <div>
-        <h3 class="font-semibold text-slate-800 mb-2">AfiliadosShop</h3>
-        <p>Descubre productos de calidad al mejor precio gracias a nuestros enlaces de afiliados.</p>
+        <h3 class="font-semibold text-gray-900 mb-2">MODAROPA</h3>
+        <p>Moda asequible con estilo. Inspírate y renueva tu armario.</p>
       </div>
       <div>
-        <h3 class="font-semibold text-slate-800 mb-2">Enlaces</h3>
+        <h3 class="font-semibold text-gray-900 mb-2">Enlaces</h3>
         <ul class="space-y-1">
-          <li><a href="/" class="hover:text-indigo-600">Inicio</a></li>
-          <li><a href="#" class="hover:text-indigo-600">Categorías</a></li>
-          <li><a href="#" class="hover:text-indigo-600">Contacto</a></li>
+          <li><a href="/" class="hover:text-pink-600">Inicio</a></li>
+          <li><a href="/index" class="hover:text-pink-600">Categorías</a></li>
         </ul>
       </div>
       <div>
-        <h3 class="font-semibold text-slate-800 mb-2">Legal</h3>
-        <p>© {{ 2025 }} AfiliadosShop.<br> Algunos enlaces pueden ser de afiliado.</p>
+        <h3 class="font-semibold text-gray-900 mb-2">Legal</h3>
+        <p>© {{ 2025 }} ModaRopa.<br> Algunos enlaces pueden ser de afiliado.</p>
       </div>
     </div>
   </footer>
