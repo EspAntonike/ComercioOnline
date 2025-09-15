@@ -3,6 +3,16 @@ from pathlib import Path
 import sqlite3
 import hashlib
 import os
+import base64
+import requests
+import json
+from typing import List, Tuple, Optional
+
+
+# Crypto (cryptography). Si no está instalado: pip install cryptography
+from cryptography.hazmat.primitives.serialization import load_pem_private_key
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives import hashes
 
 app = Flask(__name__)
 
@@ -14,6 +24,9 @@ DBR_PATH = BASE_DIR / "reseñasDB.db"
 # 🔑 Hash SHA256 de la contraseña correcta
 PASSWORD_HASH = "c40e957c730718233694f439449d0166bceea4d46007c789319686233545bc54"
 
+GITHUB_REPO = "EspAntonike/ComercioOnline"
+GITHUB_IMAGES_PATH = "templates"
+GITHUB_API_BASE = "https://api.github.com"
 
 def get_conn():
     """Devuelve conexión a la BD actual"""
@@ -31,6 +44,104 @@ def get_connR():
     conn = sqlite3.connect(DBR_PATH)
     conn.row_factory = sqlite3.Row
     return conn
+
+# -------------------- helpers para imágenes y GitHub --------------------
+
+def try_load_private_key(pem_bytes: bytes, password: Optional[bytes] = None):
+    """Carga una llave privada PEM (bytes). No la guarda en disco."""
+    return load_pem_private_key(pem_bytes, password=password)
+
+
+def rsa_decrypt(private_key_obj, ciphertext: bytes) -> bytes:
+    """Descifra datos con OAEP.
+    private_key_obj debe ser el objeto devuelto por load_pem_private_key.
+    """
+    return private_key_obj.decrypt(
+        ciphertext,
+        padding.OAEP(mgf=padding.MGF1(algorithm=hashes.SHA256()), algorithm=hashes.SHA256(), label=None),
+    )
+
+
+def github_put_file(path_in_repo: str, content_bytes: bytes, commit_message: str) -> Tuple[bool, str]:
+    """Sube/actualiza un archivo en GitHub usando el token de entorno.
+    Devuelve (ok, mensaje o url)
+    """
+    token = os.environ.get("GITHUB_TOKEN")
+    if not token:
+        return False, "No hay GITHUB_TOKEN en variables de entorno"
+
+    url = f"{GITHUB_API_BASE}/repos/{GITHUB_REPO}/contents/{path_in_repo}"
+    b64 = base64.b64encode(content_bytes).decode("ascii")
+
+    # Primero: comprobar si ya existe para obtener el sha
+    headers = {"Authorization": f"token {token}", "Accept": "application/vnd.github.v3+json"}
+    resp = requests.get(url, headers=headers, timeout=20)
+    payload = {"message": commit_message, "content": b64}
+    if resp.status_code == 200:
+        # existe -> update necesita sha
+        sha = resp.json().get("sha")
+        payload["sha"] = sha
+
+    r = requests.put(url, headers=headers, data=json.dumps(payload), timeout=30)
+    if r.status_code in (200, 201):
+        return True, r.json().get("content", {}).get("html_url", "OK")
+    else:
+        return False, f"GitHub error {r.status_code}: {r.text}"
+
+
+def extract_image_fields_from_db(conn: sqlite3.Connection) -> List[Tuple[str, Optional[bytes]]]:
+    """Intento razonable de extraer imágenes (o paths) desde la tabla 'products'.
+    Devuelve lista de tuplas (filename_or_key, bytes_or_None)
+    - Si la columna contiene un path/nombre -> bytes_or_None será None (se intentará leerlo en disco)
+    - Si la columna es BLOB -> bytes_or_None contendrá los bytes
+
+    *Se prueba un conjunto de nombres de columna comunes.*
+    """
+    candidates = ["image", "imagen", "images", "foto", "img", "image_path", "image_url", "picture", "photo"]
+    out = []
+    cur = conn.execute("PRAGMA table_info(products)")
+    cols = [r[1] for r in cur.fetchall()]
+
+    # Buscar columnas que coincidan con posibles nombres
+    found = [c for c in cols if c.lower() in candidates]
+
+    # Si no hay columnas con esos nombres, devolvemos intento con columnas que sean TEXT o BLOB
+    if not found:
+        # Intentar devolver cualquier columna con tipo BLOB o TEXT que parezca contener imágenes
+        info = conn.execute("PRAGMA table_info(products)").fetchall()
+        for cid, name, ctype, notnull, dflt, pk in info:
+            if ctype and ctype.lower() in ("blob", "bytea"):
+                found.append(name)
+
+    if not found:
+        # última opción: mirar la primera fila y buscar campos que parezcan rutas (terminan en .png/.jpg/.jpeg/.webp/.enc)
+        row = conn.execute("SELECT * FROM products LIMIT 1").fetchone()
+        if row:
+            for k in row.keys():
+                v = row[k]
+                if isinstance(v, str) and any(v.lower().endswith(ext) for ext in (".png", ".jpg", ".jpeg", ".webp", ".gif", ".enc")):
+                    found.append(k)
+
+    # ahora extraer todos los valores de las columnas encontradas
+    if not found:
+        return out
+
+    sql = f"SELECT id, {', '.join(found)} FROM products"
+    rows = conn.execute(sql).fetchall()
+    for r in rows:
+        pid = r[0]
+        for col in found:
+            val = r[col]
+            if val is None:
+                continue
+            if isinstance(val, (bytes, bytearray)):
+                out.append((f"product_{pid}_{col}", bytes(val)))
+            elif isinstance(val, str):
+                out.append((val, None))
+            else:
+                # intentar convertir a str
+                out.append((str(val), None))
+    return out
 
 
 @app.route("/")
@@ -254,6 +365,10 @@ def producto(pid):
 
 @app.route("/receive", methods=["POST"])
 def receive():
+    """Recibe la BD (igual que antes) + opcionalmente rsa_private_key y rsa_public_key.
+    - Guarda la BD temporalmente (TEMP_PATH) para que index() la active cuando exista.
+    - Intenta extraer imágenes referenciadas en la BD y subirlas a GitHub (no guarda las keys en disco).
+    """
     password = request.form.get("password", "")
     file = request.files.get("dbfile")
 
@@ -264,15 +379,83 @@ def receive():
     if phash != PASSWORD_HASH:
         return "FAIL", 403
 
+    # archivos de llave opcionales (no se guardan en disco)
+    rsa_priv = request.files.get("rsa_private_key")
+    rsa_pub = request.files.get("rsa_public_key")
+    private_key_obj = None
+    if rsa_priv:
+        pem = rsa_priv.read()
+        try:
+            private_key_obj = try_load_private_key(pem)
+        except Exception as e:
+            return f"ERROR llave privada: {e}", 400
+
+    # Guardar temporalmente la BD (la app principal la re-activará si existe TEMP_PATH)
     file.save(TEMP_PATH)
+    # probar abrir y contar
     try:
         with sqlite3.connect(TEMP_PATH) as conn:
             rows = conn.execute("SELECT COUNT(*) FROM products").fetchone()
             print(f"✅ BD recibida con {rows[0]} productos (esperando refresco del navegador)")
+
+            # intentar extraer imágenes y subirlas
+            images = extract_image_fields_from_db(conn)
+            uploaded = []
+            for name_or_path, blob in images:
+                try:
+                    content_bytes = None
+                    filename = Path(name_or_path).name
+
+                    if blob is not None:
+                        # valor BLOB desde la BD
+                        content_bytes = blob
+                    else:
+                        # intentar leer desde disco relativo a templates/
+                        candidate = BASE_DIR / "templates" / name_or_path
+                        candidate_alt = BASE_DIR / "templates" / filename
+                        if candidate.exists():
+                            content_bytes = candidate.read_bytes()
+                        elif candidate_alt.exists():
+                            content_bytes = candidate_alt.read_bytes()
+                        else:
+                            # no encontrado en disco. Ignorar.
+                            print(f"imagen no encontrada en disco: {name_or_path}")
+                            continue
+
+                    # detectar si está cifrada: heurística
+                    if content_bytes.startswith(b"ENCRYPTED:") or filename.lower().endswith(".enc"):
+                        if private_key_obj is None:
+                            print("Imagen cifrada pero no se proporcionó llave privada: salto")
+                            continue
+                        # quitar prefijo y base64-decode
+                        if content_bytes.startswith(b"ENCRYPTED:"):
+                            b64 = content_bytes.split(b":", 1)[1].strip()
+                            ciphertext = base64.b64decode(b64)
+                        else:
+                            ciphertext = content_bytes
+                        try:
+                            content_bytes = rsa_decrypt(private_key_obj, ciphertext)
+                        except Exception as e:
+                            print(f"Error descifrando {name_or_path}: {e}")
+                            continue
+
+                    # subir a GitHub
+                    path_in_repo = f"{GITHUB_IMAGES_PATH}/{filename}"
+                    ok, msg = github_put_file(path_in_repo, content_bytes, commit_message=f"Upload image {filename} from public_app")
+                    uploaded.append((filename, ok, msg))
+                except Exception as e:
+                    print(f"Error procesando imagen {name_or_path}: {e}")
+
+            print("Resumen subidas:", uploaded)
+
     except Exception as e:
         return f"ERROR: {e}", 500
 
     return "OK", 200
+
+
+if __name__ == "__main__":
+    app.run(debug=True, port=5000)
 
 
 @app.route("/todos")
