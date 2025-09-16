@@ -1,3 +1,4 @@
+# public_app.py
 from flask import Flask, render_template, request, jsonify
 from pathlib import Path
 import sqlite3
@@ -10,6 +11,8 @@ BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = BASE_DIR / "products.db"   # BD actual en uso
 TEMP_PATH = BASE_DIR / "db_temp.db"  # BD en espera (recibida desde subir.py)
 DBR_PATH = BASE_DIR / "reseñasDB.db"
+UPLOADS_DIR = BASE_DIR / "static" / "uploads"
+UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 
 # 🔑 Hash SHA256 de la contraseña correcta
 PASSWORD_HASH = "c40e957c730718233694f439449d0166bceea4d46007c789319686233545bc54"
@@ -255,16 +258,25 @@ def producto(pid):
 @app.route("/receive", methods=["POST"])
 def receive():
     password = request.form.get("password", "")
-    file = request.files.get("dbfile")
+    dbfile = request.files.get("dbfile")
 
-    if not password or not file:
+    if not password or not dbfile:
         return "FALTAN DATOS", 400
 
     phash = hashlib.sha256(password.encode()).hexdigest()
     if phash != PASSWORD_HASH:
         return "FAIL", 403
 
-    file.save(TEMP_PATH)
+    # Guardar DB temporal
+    dbfile.save(TEMP_PATH)
+
+    # Guardar fotos recibidas
+    for key, f in request.files.items():
+        if key.startswith("foto"):
+            fname = os.path.basename(f.filename)
+            f.save(UPLOADS_DIR / fname)
+
+    # Validar BD
     try:
         with sqlite3.connect(TEMP_PATH) as conn:
             rows = conn.execute("SELECT COUNT(*) FROM products").fetchone()
@@ -302,4 +314,3 @@ def registrar_click(pid):
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
-    
