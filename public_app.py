@@ -1,9 +1,9 @@
-# public_app.py
 from flask import Flask, render_template, request, jsonify
 from pathlib import Path
 import sqlite3
 import hashlib
 import os
+import zipfile
 
 app = Flask(__name__)
 
@@ -258,25 +258,16 @@ def producto(pid):
 @app.route("/receive", methods=["POST"])
 def receive():
     password = request.form.get("password", "")
-    dbfile = request.files.get("dbfile")
+    file = request.files.get("dbfile")
 
-    if not password or not dbfile:
+    if not password or not file:
         return "FALTAN DATOS", 400
 
     phash = hashlib.sha256(password.encode()).hexdigest()
     if phash != PASSWORD_HASH:
         return "FAIL", 403
 
-    # Guardar DB temporal
-    dbfile.save(TEMP_PATH)
-
-    # Guardar fotos recibidas
-    for key, f in request.files.items():
-        if key.startswith("foto"):
-            fname = os.path.basename(f.filename)
-            f.save(UPLOADS_DIR / fname)
-
-    # Validar BD
+    file.save(TEMP_PATH)
     try:
         with sqlite3.connect(TEMP_PATH) as conn:
             rows = conn.execute("SELECT COUNT(*) FROM products").fetchone()
@@ -311,6 +302,31 @@ def registrar_click(pid):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route("/receive_uploads", methods=["POST"])
+def receive_uploads():
+    password = request.form.get("password", "")
+    file = request.files.get("zipfile")
+
+    if not password or not file:
+        return "FALTAN DATOS", 400
+
+    phash = hashlib.sha256(password.encode()).hexdigest()
+    if phash != PASSWORD_HASH:
+        return "FAIL", 403
+
+    temp_zip = BASE_DIR / "uploads_temp.zip"
+    file.save(temp_zip)
+
+    try:
+        with zipfile.ZipFile(temp_zip, "r") as zip_ref:
+            zip_ref.extractall(UPLOADS_DIR)
+        temp_zip.unlink()  # borrar el zip temporal
+        print(f"✅ Carpeta de imágenes recibida y descomprimida en {UPLOADS_DIR}")
+    except Exception as e:
+        return f"ERROR al descomprimir: {e}", 500
+
+    return "OK", 200
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
+    
