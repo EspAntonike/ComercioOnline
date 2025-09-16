@@ -258,24 +258,42 @@ def producto(pid):
 @app.route("/receive", methods=["POST"])
 def receive():
     password = request.form.get("password", "")
-    file = request.files.get("dbfile")
+    dbfile = request.files.get("dbfile")
+    zipfile_in = request.files.get("zipfile")
 
-    if not password or not file:
+    if not password or (not dbfile and not zipfile_in):
         return "FALTAN DATOS", 400
 
     phash = hashlib.sha256(password.encode()).hexdigest()
     if phash != PASSWORD_HASH:
         return "FAIL", 403
 
-    file.save(TEMP_PATH)
-    try:
-        with sqlite3.connect(TEMP_PATH) as conn:
-            rows = conn.execute("SELECT COUNT(*) FROM products").fetchone()
-            print(f"✅ BD recibida con {rows[0]} productos (esperando refresco del navegador)")
-    except Exception as e:
-        return f"ERROR: {e}", 500
+    # 📌 Si es base de datos
+    if dbfile:
+        dbfile.save(TEMP_PATH)
+        try:
+            with sqlite3.connect(TEMP_PATH) as conn:
+                rows = conn.execute("SELECT COUNT(*) FROM products").fetchone()
+                print(f"✅ BD recibida con {rows[0]} productos (esperando refresco del navegador)")
+        except Exception as e:
+            return f"ERROR: {e}", 500
+        return "OK", 200
 
-    return "OK", 200
+    # 📌 Si es zip con imágenes
+    if zipfile_in:
+        temp_zip = BASE_DIR / "uploads_temp.zip"
+        zipfile_in.save(temp_zip)
+
+        try:
+            with zipfile.ZipFile(temp_zip, "r") as zip_ref:
+                zip_ref.extractall(UPLOADS_DIR)
+            temp_zip.unlink()  # borramos el zip
+            print(f"✅ Imágenes extraídas en {UPLOADS_DIR}")
+        except Exception as e:
+            return f"ERROR al descomprimir: {e}", 500
+        return "OK", 200
+
+    return "ERROR: No se recibió archivo válido", 400
 
 
 @app.route("/todos")
@@ -302,30 +320,6 @@ def registrar_click(pid):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route("/receive_uploads", methods=["POST"])
-def receive_uploads():
-    password = request.form.get("password", "")
-    file = request.files.get("zipfile")
-
-    if not password or not file:
-        return "FALTAN DATOS", 400
-
-    phash = hashlib.sha256(password.encode()).hexdigest()
-    if phash != PASSWORD_HASH:
-        return "FAIL", 403
-
-    temp_zip = BASE_DIR / "uploads_temp.zip"
-    file.save(temp_zip)
-
-    try:
-        with zipfile.ZipFile(temp_zip, "r") as zip_ref:
-            zip_ref.extractall(UPLOADS_DIR)
-        temp_zip.unlink()  # borrar el zip temporal
-        print(f"✅ Carpeta de imágenes recibida y descomprimida en {UPLOADS_DIR}")
-    except Exception as e:
-        return f"ERROR al descomprimir: {e}", 500
-
-    return "OK", 200
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
