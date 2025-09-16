@@ -3,7 +3,6 @@ from pathlib import Path
 import sqlite3
 import hashlib
 import os
-import zipfile
 
 app = Flask(__name__)
 
@@ -11,8 +10,6 @@ BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = BASE_DIR / "products.db"   # BD actual en uso
 TEMP_PATH = BASE_DIR / "db_temp.db"  # BD en espera (recibida desde subir.py)
 DBR_PATH = BASE_DIR / "reseñasDB.db"
-UPLOADS_PATH = BASE_DIR / "static" / "uploads"
-UPLOADS_PATH.mkdir(parents=True, exist_ok=True)
 
 # 🔑 Hash SHA256 de la contraseña correcta
 PASSWORD_HASH = "c40e957c730718233694f439449d0166bceea4d46007c789319686233545bc54"
@@ -258,38 +255,22 @@ def producto(pid):
 @app.route("/receive", methods=["POST"])
 def receive():
     password = request.form.get("password", "")
-    dbfile = request.files.get("dbfile")
-    imageszip = request.files.get("imageszip")
+    file = request.files.get("dbfile")
 
-    if not password or not dbfile:
+    if not password or not file:
         return "FALTAN DATOS", 400
 
     phash = hashlib.sha256(password.encode()).hexdigest()
     if phash != PASSWORD_HASH:
         return "FAIL", 403
 
-    # Guardar base de datos
-    dbfile.save(TEMP_PATH)
-
+    file.save(TEMP_PATH)
     try:
         with sqlite3.connect(TEMP_PATH) as conn:
             rows = conn.execute("SELECT COUNT(*) FROM products").fetchone()
             print(f"✅ BD recibida con {rows[0]} productos (esperando refresco del navegador)")
     except Exception as e:
-        return f"ERROR DB: {e}", 500
-
-    # Guardar y extraer imágenes si se envió .zip
-    if imageszip:
-        zippath = BASE_DIR / "images_temp.zip"
-        imageszip.save(zippath)
-        try:
-            with zipfile.ZipFile(zippath, "r") as zip_ref:
-                zip_ref.extractall(BASE_DIR)  # ⚡ extrae respetando la carpeta static/uploads/
-            print("✅ Imágenes extraídas en static/uploads/")
-        except Exception as e:
-            return f"ERROR ZIP: {e}", 500
-        finally:
-            zippath.unlink(missing_ok=True)
+        return f"ERROR: {e}", 500
 
     return "OK", 200
 
