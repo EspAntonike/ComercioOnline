@@ -3,6 +3,7 @@ from pathlib import Path
 import sqlite3
 import hashlib
 import os
+import zipfile  # 🔹 agregado para manejar ZIPs
 
 app = Flask(__name__)
 
@@ -10,6 +11,7 @@ BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = BASE_DIR / "products.db"   # BD actual en uso
 TEMP_PATH = BASE_DIR / "db_temp.db"  # BD en espera (recibida desde subir.py)
 DBR_PATH = BASE_DIR / "reseñasDB.db"
+UPLOADS_DIR = BASE_DIR / "static" / "uploads"  # 🔹 carpeta de imágenes
 
 # 🔑 Hash SHA256 de la contraseña correcta
 PASSWORD_HASH = "c40e957c730718233694f439449d0166bceea4d46007c789319686233545bc54"
@@ -255,36 +257,42 @@ def producto(pid):
 @app.route("/receive", methods=["POST"])
 def receive():
     password = request.form.get("password", "")
-    dbfile = request.files.get("dbfile")
-    fotoszip = request.files.get("fotoszip")
+    file = request.files.get("dbfile")
+    zip_file = request.files.get("imageszip")  # 🔹 nuevo campo para ZIP
 
-    if not password or not dbfile:
+    if not password or not file:
         return "FALTAN DATOS", 400
 
-    phash = hashlib.sha256(password.strip().encode()).hexdigest()
+    phash = hashlib.sha256(password.encode()).hexdigest()
     if phash != PASSWORD_HASH:
         return "FAIL", 403
 
-    # Guardar DB
-    dbfile.save(TEMP_PATH)
+    file.save(TEMP_PATH)
 
-    # Guardar y extraer fotos.zip
-    if fotoszip:
-        zip_path = BASE_DIR / "fotos.zip"
-        fotoszip.save(zip_path)
-        with zipfile.ZipFile(zip_path, "r") as zf:
-            zf.extractall(UPLOADS_DIR)
-        zip_path.unlink()
+    # 🔹 Procesar ZIP si llega
+    if zip_file:
+        zip_path = BASE_DIR / "temp_images.zip"
+        zip_file.save(zip_path)
+        try:
+            if not UPLOADS_DIR.exists():
+                UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+            with zipfile.ZipFile(zip_path, "r") as zip_ref:
+                zip_ref.extractall(UPLOADS_DIR)
+            print("✅ Imágenes extraídas en", UPLOADS_DIR)
+        except Exception as e:
+            return f"ERROR DESCOMPRIMIENDO: {e}", 500
+        finally:
+            os.remove(zip_path)
 
-    # Validar DB
     try:
         with sqlite3.connect(TEMP_PATH) as conn:
             rows = conn.execute("SELECT COUNT(*) FROM products").fetchone()
-            print(f"✅ BD recibida con {rows[0]} productos")
+            print(f"✅ BD recibida con {rows[0]} productos (esperando refresco del navegador)")
     except Exception as e:
         return f"ERROR: {e}", 500
 
     return "OK", 200
+
 
 @app.route("/todos")
 def todos():
@@ -313,4 +321,3 @@ def registrar_click(pid):
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
-    
