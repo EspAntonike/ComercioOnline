@@ -12,7 +12,7 @@
         {% set primera_img = p['image_path'].split(',')[0] if p['image_path'] else None %}
         <div class="h-40 flex items-center justify-center mb-4">
           {% if primera_img %}
-            <img src="{{ primera_img.strip() }}" alt="{{ p['name'] }}" class="max-h-full object-contain">
+            <img src="{{ url_for('static', filename='uploads/' ~ primera_img.strip()) }}" alt="{{ p['name'] }}" class="max-h-full object-contain">
           {% else %}
             <span class="text-gray-400">Sin imagen</span>
           {% endif %}
