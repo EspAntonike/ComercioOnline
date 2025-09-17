@@ -80,7 +80,7 @@
 <!-- Productos Destacados -->
 <section class="mt-16 px-6" aria-label="Productos destacados">
     <div class="flex items-center gap-4 mb-8">
-    <h2 class="text-2xl font-bold">Productos Destacados</h2>
+    <h2 class="text-2xl font-bold">⭐ Productos Destacados</h2>
     <a href="{{ url_for('todos') }}"
         class="bg-black text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-800 transition">
         Ver todo
@@ -95,7 +95,7 @@
         {% set primera_img = p['image_path'].split(',')[0] if p['image_path'] else None %}
         <div class="h-40 flex items-center justify-center mb-4">
           {% if primera_img %}
-            <img src="{{ primera_img.strip() }}" alt="{{ p['name'] }}" class="max-h-full object-contain">
+            <img src="{{ url_for('static', filename='uploads/' ~ primera_img.strip()) }}" alt="{{ p['name'] }}" class="max-h-full object-contain">
           {% else %}
             <span class="text-gray-400">Sin imagen</span>
           {% endif %}
