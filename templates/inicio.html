@@ -93,6 +93,9 @@
         
         <!-- Imagen -->
         {% set primera_img = p['image_path'].split(',')[0] if p['image_path'] else None %}
+        {% if primera_img %}
+          {% set primera_img = primera_img.replace('/static/uploads/', '').replace('static/uploads/', '') %}
+        {% endif %}
         <div class="h-40 flex items-center justify-center mb-4">
           {% if primera_img %}
             <img src="{{ url_for('static', filename='uploads/' ~ primera_img.strip()) }}" alt="{{ p['name'] }}" class="max-h-full object-contain">
