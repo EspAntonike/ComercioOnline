@@ -255,25 +255,36 @@ def producto(pid):
 @app.route("/receive", methods=["POST"])
 def receive():
     password = request.form.get("password", "")
-    file = request.files.get("dbfile")
+    dbfile = request.files.get("dbfile")
+    fotoszip = request.files.get("fotoszip")
 
-    if not password or not file:
+    if not password or not dbfile:
         return "FALTAN DATOS", 400
 
-    phash = hashlib.sha256(password.encode()).hexdigest()
+    phash = hashlib.sha256(password.strip().encode()).hexdigest()
     if phash != PASSWORD_HASH:
         return "FAIL", 403
 
-    file.save(TEMP_PATH)
+    # Guardar DB
+    dbfile.save(TEMP_PATH)
+
+    # Guardar y extraer fotos.zip
+    if fotoszip:
+        zip_path = BASE_DIR / "fotos.zip"
+        fotoszip.save(zip_path)
+        with zipfile.ZipFile(zip_path, "r") as zf:
+            zf.extractall(UPLOADS_DIR)
+        zip_path.unlink()
+
+    # Validar DB
     try:
         with sqlite3.connect(TEMP_PATH) as conn:
             rows = conn.execute("SELECT COUNT(*) FROM products").fetchone()
-            print(f"✅ BD recibida con {rows[0]} productos (esperando refresco del navegador)")
+            print(f"✅ BD recibida con {rows[0]} productos")
     except Exception as e:
         return f"ERROR: {e}", 500
 
     return "OK", 200
-
 
 @app.route("/todos")
 def todos():
