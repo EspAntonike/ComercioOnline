@@ -3,6 +3,7 @@
 {% block content %}
 
 <div class="grid md:grid-cols-2 gap-6">
+  <!-- Foto -->
   <div class="border rounded-xl p-4 bg-white shadow relative">
     {% if p.image_path %}
       {% set imagenes = p.image_path.split(',') %}
@@ -14,6 +15,8 @@
             </div>
           {% endfor %}
         </div>
+
+        <!-- Controles -->
         <button type="button" class="prev absolute left-2 top-1/2 -translate-y-1/2 bg-black text-white rounded-full p-2">‹</button>
         <button type="button" class="next absolute right-2 top-1/2 -translate-y-1/2 bg-black text-white rounded-full p-2">›</button>
       </div>
@@ -40,14 +43,30 @@
   });
   </script>
 
+  <!-- Derecha (Descripción + botón) -->
   <div class="flex flex-col justify-between border rounded-xl bg-white shadow p-6">
     <div>
       <h1 class="text-2xl font-bold text-gray-900">{{ p.name }}</h1>
       <p class="text-sm text-gray-500 mt-1">Categoría: {{ p.category }}</p>
-      {% if p.sexo %}<p class="text-sm text-gray-600 mt-1">Sexo: {{ p.sexo }}</p>{% endif %}
-      {% if p.talla %}<p class="text-sm text-gray-600 mt-1">Tallas: {{ p.talla.replace('-', ' ') }}</p>{% endif %}
-      {% if p.precio %}<p class="text-xl font-bold text-green-600 mt-3">Precio: {{ p.precio }} €</p>{% endif %}
-      {% if p.description %}<p class="text-gray-700 mt-4">{{ p.description }}</p>{% else %}<p class="text-gray-400 mt-4">Sin descripción</p>{% endif %}
+
+      <!-- 👕 Info adicional -->
+      {% if p.sexo %}
+        <p class="text-sm text-gray-600 mt-1">Sexo: {{ p.sexo }}</p>
+      {% endif %}
+
+      {% if p.talla %}
+        <p class="text-sm text-gray-600 mt-1">Tallas: {{ p.talla.replace('-', ' ') }}</p>
+      {% endif %}
+
+      {% if p.precio %}
+        <p class="text-xl font-bold text-green-600 mt-3">Precio: {{ p.precio }} €</p>
+      {% endif %}
+
+      {% if p.description %}
+        <p class="text-gray-700 mt-4">{{ p.description }}</p>
+      {% else %}
+        <p class="text-gray-400 mt-4">Sin descripción</p>
+      {% endif %}
     </div>
 
     <div class="mt-6">
@@ -66,12 +85,15 @@
   </div>
 </div>
 
+<!-- 📌 Reseñas -->
 <div class="mt-10 bg-white border rounded-xl shadow p-6">
   <h2 class="text-xl font-semibold text-gray-800 mb-4">Deja tu reseña</h2>
 
   <form method="post" class="space-y-4">
     <input type="text" name="nombre" placeholder="Tu nombre" class="w-full border rounded-lg p-2" required>
     <textarea name="reseña" placeholder="Escribe tu reseña..." class="w-full border rounded-lg p-2" required></textarea>
+
+    <!-- ⭐ Selector de estrellas con medias -->
     <label class="block">
       Valoración:
       <div id="star-rating" class="flex items-center gap-1 mt-2 cursor-pointer">
@@ -90,6 +112,7 @@
   </form>
 </div>
 
+<!-- 📌 Listado de reseñas -->
 <div class="mt-8 bg-white border rounded-xl shadow p-6">
   <h2 class="text-xl font-semibold text-gray-800 mb-4">Reseñas de clientes</h2>
 
@@ -98,14 +121,24 @@
       {% for r in reseñas %}
         <li class="border-b pb-3">
           <p class="font-semibold">{{ r['nombre'] }}</p>
+
+          <!-- Mostrar estrellas con medias -->
           <div class="flex items-center gap-1 text-2xl">
             {% set full = r['valoracion']|int %}
             {% set half = 1 if (r['valoracion'] - full) >= 0.5 else 0 %}
             {% set empty = 5 - full - half %}
-            {% for i in range(full) %}<span class="text-yellow-400">★</span>{% endfor %}
-            {% if half %}<span class="text-yellow-400 half-star">★</span>{% endif %}
-            {% for i in range(empty) %}<span class="text-gray-300">★</span>{% endfor %}
+
+            {% for i in range(full) %}
+              <span class="text-yellow-400">★</span>
+            {% endfor %}
+            {% if half %}
+              <span class="text-yellow-400 half-star">★</span>
+            {% endif %}
+            {% for i in range(empty) %}
+              <span class="text-gray-300">★</span>
+            {% endfor %}
           </div>
+
           <p class="text-gray-700 mt-1">{{ r['reseña'] }}</p>
         </li>
       {% endfor %}
@@ -114,5 +147,56 @@
     <p class="text-gray-500">Aún no hay reseñas para este producto.</p>
   {% endif %}
 </div>
+
+<style>
+  /* Estrellas en formulario */
+  .star-wrapper { width: 2rem; height: 2rem; position: relative; display: inline-block; }
+  .star-wrapper .half { position: absolute; cursor: pointer; color: transparent; }
+  .star-wrapper .base { color: #d1d5db; }
+  .star-wrapper.active .base { color: #facc15; }
+  .star-wrapper.half-active .base {
+    background: linear-gradient(90deg, #facc15 50%, #d1d5db 50%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* Media estrella en listado */
+  .half-star {
+    background: linear-gradient(90deg, #facc15 50%, #d1d5db 50%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const halves = document.querySelectorAll("#star-rating .half");
+  const inputValoracion = document.getElementById("valoracion");
+  const wrappers = document.querySelectorAll(".star-wrapper");
+  let currentValue = 0;
+
+  function updateStars(value) {
+    wrappers.forEach((wrapper, i) => {
+      wrapper.classList.remove("active", "half-active");
+      const starIndex = i + 1;
+      if (value >= starIndex) {
+        wrapper.classList.add("active");
+      } else if (value + 0.5 === starIndex) {
+        wrapper.classList.add("half-active");
+      }
+    });
+  }
+
+  halves.forEach(half => {
+    half.addEventListener("click", () => {
+      currentValue = parseFloat(half.dataset.value);
+      inputValoracion.value = currentValue;
+      updateStars(currentValue);
+    });
+    half.addEventListener("mouseenter", () => updateStars(parseFloat(half.dataset.value)));
+    half.addEventListener("mouseleave", () => updateStars(currentValue));
+  });
+});
+</script>
 
 {% endblock %}
