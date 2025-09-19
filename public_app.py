@@ -3,8 +3,6 @@ from pathlib import Path
 import sqlite3
 import hashlib
 import os
-import zipfile
-import io
 
 app = Flask(__name__)
 
@@ -12,10 +10,6 @@ BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = BASE_DIR / "products.db"   # BD actual en uso
 TEMP_PATH = BASE_DIR / "db_temp.db"  # BD en espera (recibida desde subir.py)
 DBR_PATH = BASE_DIR / "reseñasDB.db"
-
-# nuevo: rutas temporales para zip de imágenes y carpeta destino
-TEMP_IMAGES_ZIP = BASE_DIR / "images_temp.zip"
-STATIC_UPLOADS_DIR = BASE_DIR / "static" / "uploads"
 
 # 🔑 Hash SHA256 de la contraseña correcta
 PASSWORD_HASH = "c40e957c730718233694f439449d0166bceea4d46007c789319686233545bc54"
@@ -55,9 +49,6 @@ def index():
     # 🔄 Si hay una nueva BD en TEMP, la activamos
     if TEMP_PATH.exists():
         os.replace(TEMP_PATH, DB_PATH)
-
-    # 🔄 Si hay un zip de imágenes en TEMP, y existe la carpeta de uploads ya, dejamos como está
-    # (La extracción de ZIP se realiza al recibirlo; aquí no se toca nada más)
 
     conn = get_conn()
     if conn is None:
@@ -261,45 +252,10 @@ def producto(pid):
     return render_template("producto.html", p=prod, reseñas=reseñas)
 
 
-def _is_within_directory(directory: Path, target: Path) -> bool:
-    """Helper: evita path traversal comprobando que target está dentro de directory"""
-    try:
-        directory = directory.resolve()
-        target = target.resolve()
-        return str(target).startswith(str(directory))
-    except Exception:
-        return False
-
-
-def _safe_extract_zip(zip_bytes: bytes, dest_dir: Path):
-    """Descomprime zip desde bytes en dest_dir de forma segura (sin path traversal)."""
-    with zipfile.ZipFile(io.BytesIO(zip_bytes)) as z:
-        for member in z.infolist():
-            # normalizar nombre
-            member_name = member.filename
-            if member_name.endswith('/'):
-                # directorio, crearlo si hace falta
-                target_dir = dest_dir / member_name
-                target_dir.mkdir(parents=True, exist_ok=True)
-                continue
-
-            target_path = dest_dir / member_name
-            if not _is_within_directory(dest_dir, target_path):
-                raise Exception(f"Zip contiene una ruta insegura: {member_name}")
-
-            # crear directorio padre si hace falta
-            target_path.parent.mkdir(parents=True, exist_ok=True)
-
-            # escribir archivo (sobrescribe si existe)
-            with z.open(member) as src, open(target_path, "wb") as dst:
-                dst.write(src.read())
-
-
 @app.route("/receive", methods=["POST"])
 def receive():
     password = request.form.get("password", "")
     file = request.files.get("dbfile")
-    images_zip = request.files.get("images_zip")  # opcional
 
     if not password or not file:
         return "FALTAN DATOS", 400
@@ -308,35 +264,13 @@ def receive():
     if phash != PASSWORD_HASH:
         return "FAIL", 403
 
-    # Guardar BD temporal (igual que antes)
+    file.save(TEMP_PATH)
     try:
-        file.save(TEMP_PATH)
         with sqlite3.connect(TEMP_PATH) as conn:
             rows = conn.execute("SELECT COUNT(*) FROM products").fetchone()
             print(f"✅ BD recibida con {rows[0]} productos (esperando refresco del navegador)")
     except Exception as e:
         return f"ERROR: {e}", 500
-
-    # Si se envió un zip de imágenes, guardarlo y descomprimir en static/uploads
-    if images_zip:
-        try:
-            # leer bytes
-            zip_bytes = images_zip.read()
-            # crear carpeta destino si no existe
-            STATIC_UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
-            # guardar zip temporal (opcional)
-            try:
-                with open(TEMP_IMAGES_ZIP, "wb") as f:
-                    f.write(zip_bytes)
-            except Exception:
-                # no crítico si falla escribir el zip a disco; seguiremos con la extracción desde bytes
-                pass
-
-            # extraer de forma segura
-            _safe_extract_zip(zip_bytes, STATIC_UPLOADS_DIR)
-            print(f"✅ Zip de imágenes recibido y descomprimido en {STATIC_UPLOADS_DIR}")
-        except Exception as e:
-            return f"ERROR al extraer imágenes: {e}", 500
 
     return "OK", 200
 
@@ -368,3 +302,4 @@ def registrar_click(pid):
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
+    
