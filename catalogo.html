@@ -23,47 +23,73 @@
 
     <main class="max-w-7xl mx-auto px-4 py-10 flex-grow">
         
-        <h1 class="text-3xl font-bold text-center mb-8">Catálogo Completo</h1>
+        <div class="flex flex-col md:flex-row justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold text-gray-900">Catálogo</h1>
+            <span class="text-sm text-gray-500 mt-2 md:mt-0"></span>
+        </div>
 
-        <div class="bg-gray-50 p-6 rounded-xl shadow-sm mb-10">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div class="md:col-span-4">
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Buscar</label>
-                    <input type="text" id="search-input" placeholder="Ej: Vestido rojo..." class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-pink-500 outline-none">
-                </div>
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 mb-10">
+            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-x-4 gap-y-6">
                 
-                <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Categoría</label>
-                    <select id="cat-select" class="w-full border rounded-lg px-3 py-2 bg-white">
+                <div class="col-span-2 md:col-span-4 lg:col-span-6">
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Buscar producto</label>
+                    <div class="relative">
+                        <input type="text" id="search-input" placeholder="Ej: Vestido floral, Camiseta básica..." class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-pink-500 focus:border-pink-500 outline-none transition bg-gray-50">
+                        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-400">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-span-2 md:col-span-2 lg:col-span-1">
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Categoría</label>
+                    <select id="cat-select" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 bg-white focus:ring-2 focus:ring-pink-500 outline-none cursor-pointer">
                         <option value="">Todas</option>
                     </select>
                 </div>
 
-                <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Talla</label>
-                    <select id="size-select" class="w-full border rounded-lg px-3 py-2 bg-white">
+                <div class="col-span-1 md:col-span-1 lg:col-span-1">
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Talla</label>
+                    <select id="size-select" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 bg-white focus:ring-2 focus:ring-pink-500 outline-none cursor-pointer">
                         <option value="">Todas</option>
                     </select>
                 </div>
 
-                <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Sexo</label>
-                    <select id="sex-select" class="w-full border rounded-lg px-3 py-2 bg-white">
+                <div class="col-span-1 md:col-span-1 lg:col-span-1">
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Sexo</label>
+                    <select id="sex-select" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 bg-white focus:ring-2 focus:ring-pink-500 outline-none cursor-pointer">
                         <option value="">Todos</option>
                     </select>
                 </div>
 
-                <div class="flex items-end">
-                    <button onclick="resetFilters()" class="w-full bg-gray-200 text-gray-700 font-bold py-2 rounded-lg hover:bg-gray-300 transition">
-                        Limpiar Filtros
+                <div class="col-span-1 md:col-span-2 lg:col-span-1">
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Precio Mín (€)</label>
+                    <input type="text" inputmode="decimal" id="min-price" placeholder="0" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-pink-500 outline-none">
+                </div>
+
+                <div class="col-span-1 md:col-span-2 lg:col-span-1">
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Precio Máx (€)</label>
+                    <input type="text" inputmode="decimal" id="max-price" placeholder="100" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-pink-500 outline-none">
+                </div>
+
+                <div class="col-span-2 md:col-span-4 lg:col-span-1 flex items-end">
+                    <button onclick="resetFilters()" class="w-full bg-gray-100 text-gray-600 font-bold py-2.5 rounded-lg hover:bg-gray-200 hover:text-gray-900 transition border border-gray-200 flex justify-center items-center gap-2">
+                        <span>Limpiar</span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                     </button>
                 </div>
+
             </div>
         </div>
 
         <div id="products-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
             </div>
-        <p id="no-results" class="hidden text-center text-gray-500 mt-10 text-lg">No se encontraron productos con esos filtros.</p>
+        
+        <p id="no-results" class="hidden text-center text-gray-500 mt-20 text-lg flex flex-col items-center">
+            <svg class="w-16 h-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            No se encontraron productos con esos filtros.
+            <button onclick="resetFilters()" class="text-pink-600 font-bold hover:underline mt-2">Limpiar filtros</button>
+        </p>
 
     </main>
 
@@ -82,6 +108,7 @@
             .then(data => {
                 allProducts = data;
                 populateFilters(data);
+                calculatePriceRange(data);
                 renderProducts(data);
             })
             .catch(err => console.error("Error cargando JSON:", err));
@@ -96,13 +123,15 @@
                 if(p.category) categories.add(p.category);
                 if(p.sexo) sexes.add(p.sexo);
                 if(p.tallas) {
-                    // Si las tallas vienen como "S,M,L" o "S-M-L"
                     p.tallas.split(/[,-]/).forEach(t => sizes.add(t.trim()));
                 }
             });
 
             const fillSelect = (id, set) => {
                 const sel = document.getElementById(id);
+                sel.innerHTML = '<option value="">Todas</option>';
+                if(id === 'sex-select') sel.innerHTML = '<option value="">Todos</option>';
+                
                 Array.from(set).sort().forEach(val => {
                     if(val) sel.innerHTML += `<option value="${val}">${val}</option>`;
                 });
@@ -111,6 +140,26 @@
             fillSelect('cat-select', categories);
             fillSelect('size-select', sizes);
             fillSelect('sex-select', sexes);
+        }
+
+        // Calcular rango de precios para placeholders
+        function calculatePriceRange(data) {
+            const prices = data.map(p => parseFloat(p.precio));
+            if (prices.length > 0) {
+                const min = Math.min(...prices);
+                const max = Math.max(...prices);
+                
+                document.getElementById('min-price').placeholder = Math.floor(min);
+                document.getElementById('max-price').placeholder = Math.ceil(max);
+            }
+        }
+
+        // Helper para convertir el input (con coma o punto) a número válido
+        function parsePriceInput(id) {
+            let val = document.getElementById(id).value;
+            if (!val) return NaN;
+            val = val.replace(',', '.');
+            return parseFloat(val);
         }
 
         // Renderizar productos
@@ -135,14 +184,14 @@
                 }
 
                 container.innerHTML += `
-                    <div class="border rounded-xl p-4 flex flex-col hover:shadow-lg transition bg-white">
-                        <div class="relative h-48 mb-4">
-                            <img src="${imgUrl}" class="w-full h-full object-contain">
+                    <div class="border rounded-xl p-4 flex flex-col hover:shadow-lg transition bg-white group">
+                        <div class="relative h-48 mb-4 overflow-hidden rounded-lg">
+                            <img src="${imgUrl}" class="w-full h-full object-contain group-hover:scale-105 transition duration-300">
                         </div>
                         <p class="text-xs text-gray-500 uppercase font-semibold">${p.category}</p>
-                        <h2 class="font-bold text-gray-900 text-sm mb-2 leading-tight">${p.name}</h2>
+                        <h2 class="font-bold text-gray-900 text-sm mb-2 leading-tight line-clamp-2">${p.name}</h2>
                         <div class="mt-auto pt-4 border-t flex justify-between items-center">
-                            <span class="font-bold text-lg">${parseFloat(p.precio).toFixed(2)} €</span>
+                            <span class="font-bold text-lg text-gray-900">${parseFloat(p.precio).toFixed(2)} €</span>
                             <a href="producto.html?id=${p.id}" class="bg-black text-white text-xs px-4 py-2 rounded hover:bg-pink-600 transition">Ver</a>
                         </div>
                     </div>
@@ -156,15 +205,23 @@
             const cat = document.getElementById('cat-select').value;
             const size = document.getElementById('size-select').value;
             const sex = document.getElementById('sex-select').value;
+            
+            let minP = parsePriceInput('min-price');
+            let maxP = parsePriceInput('max-price');
+            
+            if (isNaN(minP)) minP = 0;
+            if (isNaN(maxP)) maxP = Infinity;
 
             const filtered = allProducts.filter(p => {
+                const productPrice = parseFloat(p.precio);
+
                 const matchName = p.name.toLowerCase().includes(term) || (p.description && p.description.toLowerCase().includes(term));
                 const matchCat = cat === "" || p.category === cat;
                 const matchSex = sex === "" || p.sexo === sex;
-                // Coincidencia de talla parcial (si el producto tiene "S-M-L" y busco "M", debe salir)
                 const matchSize = size === "" || (p.tallas && p.tallas.includes(size));
+                const matchPrice = productPrice >= minP && productPrice <= maxP;
 
-                return matchName && matchCat && matchSex && matchSize;
+                return matchName && matchCat && matchSex && matchSize && matchPrice;
             });
 
             renderProducts(filtered);
@@ -175,12 +232,16 @@
         document.getElementById('cat-select').addEventListener('change', filterProducts);
         document.getElementById('size-select').addEventListener('change', filterProducts);
         document.getElementById('sex-select').addEventListener('change', filterProducts);
+        document.getElementById('min-price').addEventListener('input', filterProducts);
+        document.getElementById('max-price').addEventListener('input', filterProducts);
 
         function resetFilters() {
             document.getElementById('search-input').value = "";
             document.getElementById('cat-select').value = "";
             document.getElementById('size-select').value = "";
             document.getElementById('sex-select').value = "";
+            document.getElementById('min-price').value = "";
+            document.getElementById('max-price').value = "";
             renderProducts(allProducts);
         }
     </script>

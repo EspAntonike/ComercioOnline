@@ -24,20 +24,21 @@
 
     <main class="flex-grow">
         <section class="bg-gray-50 py-16 text-center px-4">
-            <div class="max-w-4xl mx-auto"> <img src="static/assets/logo-modaropa.png" onerror="this.style.display='none'" alt="ModaRopa Logo" class="mx-auto h-40 mb-6 object-contain">
+            <div class="max-w-4xl mx-auto"> 
+                <img src="static/assets/logo-modaropa.png" onerror="this.style.display='none'" alt="ModaRopa Logo" class="mx-auto h-80 w-auto mb-6 object-contain">
                 
-                <h1 class="text-4xl font-extrabold text-gray-900 mb-6">MODAROPA</h1>
+                <h1 class="text-6xl font-extrabold text-gray-900 mb-6">MODAROPA</h1>
                 
                 <div class="text-gray-600 text-lg mb-8 leading-relaxed space-y-4 text-justify sm:text-center">
                     <p>
-                        Somos <strong>MODAROPA</strong>, una pequeña tienda de ropa online afiliada a Shein, iniciada a <strong>finales de agosto de 2025</strong>. Curamos una selección de <strong>moda mujer</strong> y <strong>moda hombre</strong> con foco en <strong>tendencias 2025, vestidos, camisetas, pantalones, jeans, sudaderas, ropa deportiva, básicos, accesorios y tallas grandes</strong>.
+                        Somos una pequeña tienda de ropa online afiliada a Shein, iniciada a <strong>finales de agosto de 2025</strong>. Curamos una selección de <strong>moda mujer</strong> y <strong>moda hombre</strong> con foco en <strong>tendencias 2025, vestidos, camisetas, pantalones, jeans, sudaderas, ropa deportiva, básicos, accesorios y tallas grandes</strong>.
                     </p>
                     <p>
                         Nuestro objetivo es ayudarte a <strong>comprar ropa online</strong> de forma fácil y segura, con una cuidada relación <strong>calidad-precio, ofertas y rebajas</strong>. Usamos <strong>enlaces de afiliados</strong>, por lo que <em>precios, stock, envíos y devoluciones</em> se gestionan directamente en las tiendas afiliadas, con <strong>pago seguro y entrega rápida en España</strong>.
                     </p>
                 </div>
 
-                <a href="catalogo.html" class="inline-block bg-black text-white px-8 py-3 rounded-lg font-bold uppercase hover:bg-gray-800 transition transform hover:scale-105">
+                <a href="catalogo.html" class="inline-block bg-black text-white px-8 py-3 rounded-lg font-bold uppercase hover:bg-pink-600 transition transform hover:scale-105">
                     Ver Catálogo
                 </a>
             </div>
@@ -66,15 +67,12 @@
             .then(response => response.json())
             .then(data => {
                 const container = document.getElementById('destacados-grid');
-                container.innerHTML = ''; // Limpiar loader
+                container.innerHTML = ''; 
 
-                // 6. Aleatorizar productos al recargar
-                // Ordenamos el array de forma aleatoria antes de cortar los 5 primeros
                 const productosAleatorios = data.sort(() => 0.5 - Math.random());
                 const destacados = productosAleatorios.slice(0, 5);
 
                 destacados.forEach(p => {
-                    // Manejo seguro de imagen
                     let imgUrl = 'https://via.placeholder.com/300x400?text=Sin+Imagen';
                     if (p.image_path) {
                         const imgs = p.image_path.split(',');
