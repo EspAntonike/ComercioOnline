@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ModaRopa - Catálogo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-white text-gray-800 flex flex-col min-h-screen">
+
+    <header class="sticky top-0 bg-white shadow z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+            <a href="index.html" class="text-2xl font-extrabold tracking-wide text-black">MODAROPA</a>
+            <nav class="flex gap-6 text-sm font-medium">
+                <a href="index.html" class="hover:text-pink-600 transition">Inicio</a>
+                <a href="catalogo.html" class="text-pink-600">Catálogo</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-10 flex-grow">
+        
+        <h1 class="text-3xl font-bold text-center mb-8">Catálogo Completo</h1>
+
+        <div class="bg-gray-50 p-6 rounded-xl shadow-sm mb-10">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="md:col-span-4">
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Buscar</label>
+                    <input type="text" id="search-input" placeholder="Ej: Vestido rojo..." class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-pink-500 outline-none">
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Categoría</label>
+                    <select id="cat-select" class="w-full border rounded-lg px-3 py-2 bg-white">
+                        <option value="">Todas</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Talla</label>
+                    <select id="size-select" class="w-full border rounded-lg px-3 py-2 bg-white">
+                        <option value="">Todas</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Sexo</label>
+                    <select id="sex-select" class="w-full border rounded-lg px-3 py-2 bg-white">
+                        <option value="">Todos</option>
+                    </select>
+                </div>
+
+                <div class="flex items-end">
+                    <button onclick="resetFilters()" class="w-full bg-gray-200 text-gray-700 font-bold py-2 rounded-lg hover:bg-gray-300 transition">
+                        Limpiar Filtros
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="products-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+            </div>
+        <p id="no-results" class="hidden text-center text-gray-500 mt-10 text-lg">No se encontraron productos con esos filtros.</p>
+
+    </main>
+
+    <footer class="bg-gray-900 text-white mt-auto">
+        <div class="max-w-7xl mx-auto px-4 py-10 text-center text-sm text-gray-400">
+            <p>&copy; 2025 MODAROPA. Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <script>
+        let allProducts = [];
+
+        // Cargar datos
+        fetch('productos.json')
+            .then(res => res.json())
+            .then(data => {
+                allProducts = data;
+                populateFilters(data);
+                renderProducts(data);
+            })
+            .catch(err => console.error("Error cargando JSON:", err));
+
+        // Rellenar selects dinámicamente
+        function populateFilters(data) {
+            const categories = new Set();
+            const sizes = new Set();
+            const sexes = new Set();
+
+            data.forEach(p => {
+                if(p.category) categories.add(p.category);
+                if(p.sexo) sexes.add(p.sexo);
+                if(p.tallas) {
+                    // Si las tallas vienen como "S,M,L" o "S-M-L"
+                    p.tallas.split(/[,-]/).forEach(t => sizes.add(t.trim()));
+                }
+            });
+
+            const fillSelect = (id, set) => {
+                const sel = document.getElementById(id);
+                Array.from(set).sort().forEach(val => {
+                    if(val) sel.innerHTML += `<option value="${val}">${val}</option>`;
+                });
+            };
+
+            fillSelect('cat-select', categories);
+            fillSelect('size-select', sizes);
+            fillSelect('sex-select', sexes);
+        }
+
+        // Renderizar productos
+        function renderProducts(products) {
+            const container = document.getElementById('products-grid');
+            const noRes = document.getElementById('no-results');
+            container.innerHTML = '';
+
+            if (products.length === 0) {
+                noRes.classList.remove('hidden');
+                return;
+            } else {
+                noRes.classList.add('hidden');
+            }
+
+            products.forEach(p => {
+                let imgUrl = 'https://via.placeholder.com/300x400?text=Sin+Imagen';
+                if (p.image_path) {
+                    const imgs = p.image_path.split(',');
+                    imgUrl = imgs[0].trim();
+                    if(imgUrl.startsWith('//')) imgUrl = 'https:' + imgUrl;
+                }
+
+                container.innerHTML += `
+                    <div class="border rounded-xl p-4 flex flex-col hover:shadow-lg transition bg-white">
+                        <div class="relative h-48 mb-4">
+                            <img src="${imgUrl}" class="w-full h-full object-contain">
+                        </div>
+                        <p class="text-xs text-gray-500 uppercase font-semibold">${p.category}</p>
+                        <h2 class="font-bold text-gray-900 text-sm mb-2 leading-tight">${p.name}</h2>
+                        <div class="mt-auto pt-4 border-t flex justify-between items-center">
+                            <span class="font-bold text-lg">${parseFloat(p.precio).toFixed(2)} €</span>
+                            <a href="producto.html?id=${p.id}" class="bg-black text-white text-xs px-4 py-2 rounded hover:bg-pink-600 transition">Ver</a>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // Lógica de filtrado
+        function filterProducts() {
+            const term = document.getElementById('search-input').value.toLowerCase();
+            const cat = document.getElementById('cat-select').value;
+            const size = document.getElementById('size-select').value;
+            const sex = document.getElementById('sex-select').value;
+
+            const filtered = allProducts.filter(p => {
+                const matchName = p.name.toLowerCase().includes(term) || (p.description && p.description.toLowerCase().includes(term));
+                const matchCat = cat === "" || p.category === cat;
+                const matchSex = sex === "" || p.sexo === sex;
+                // Coincidencia de talla parcial (si el producto tiene "S-M-L" y busco "M", debe salir)
+                const matchSize = size === "" || (p.tallas && p.tallas.includes(size));
+
+                return matchName && matchCat && matchSex && matchSize;
+            });
+
+            renderProducts(filtered);
+        }
+
+        // Event Listeners
+        document.getElementById('search-input').addEventListener('input', filterProducts);
+        document.getElementById('cat-select').addEventListener('change', filterProducts);
+        document.getElementById('size-select').addEventListener('change', filterProducts);
+        document.getElementById('sex-select').addEventListener('change', filterProducts);
+
+        function resetFilters() {
+            document.getElementById('search-input').value = "";
+            document.getElementById('cat-select').value = "";
+            document.getElementById('size-select').value = "";
+            document.getElementById('sex-select').value = "";
+            renderProducts(allProducts);
+        }
+    </script>
+</body>
+</html>

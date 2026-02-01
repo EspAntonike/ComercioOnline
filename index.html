@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ModaRopa - Inicio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .card-hover:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); transition: all 0.3s; }
+    </style>
+</head>
+<body class="bg-white text-gray-800 flex flex-col min-h-screen">
+
+    <header class="sticky top-0 bg-white shadow z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+            <a href="index.html" class="text-2xl font-extrabold tracking-wide text-black">MODAROPA</a>
+            <nav class="flex gap-6 text-sm font-medium">
+                <a href="index.html" class="text-pink-600">Inicio</a>
+                <a href="catalogo.html" class="hover:text-pink-600 transition">Catálogo</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="flex-grow">
+        <section class="bg-gray-50 py-16 text-center px-4">
+            <div class="max-w-3xl mx-auto">
+                <img src="static/assets/logo-modaropa.png" onerror="this.style.display='none'" alt="ModaRopa Logo" class="mx-auto h-24 mb-6 object-contain">
+                <h1 class="text-4xl font-extrabold text-gray-900 mb-4">Tendencias de Moda 2025</h1>
+                <p class="text-gray-600 text-lg mb-8">Descubre la mejor ropa afiliada a Shein. Estilo, calidad y precio en un solo lugar.</p>
+                <a href="catalogo.html" class="inline-block bg-black text-white px-8 py-3 rounded-lg font-bold uppercase hover:bg-gray-800 transition transform hover:scale-105">
+                    Ver Catálogo Completo
+                </a>
+            </div>
+        </section>
+
+        <section class="max-w-7xl mx-auto px-4 py-12">
+            <div class="flex items-center justify-between mb-8">
+                <h2 class="text-2xl font-bold border-l-4 border-pink-500 pl-4">Productos Destacados</h2>
+                <a href="catalogo.html" class="text-pink-600 font-semibold hover:underline">Ver todos &rarr;</a>
+            </div>
+
+            <div id="destacados-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+                <div class="col-span-full text-center py-10 text-gray-500">Cargando productos...</div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-gray-900 text-white mt-auto">
+        <div class="max-w-7xl mx-auto px-4 py-10 text-center text-sm text-gray-400">
+            <p>&copy; 2025 MODAROPA. Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <script>
+        fetch('productos.json')
+            .then(response => response.json())
+            .then(data => {
+                const container = document.getElementById('destacados-grid');
+                container.innerHTML = ''; // Limpiar loader
+
+                // Mostrar solo los primeros 5 productos como destacados
+                const destacados = data.slice(0, 5);
+
+                destacados.forEach(p => {
+                    // Manejo seguro de imagen
+                    let imgUrl = 'https://via.placeholder.com/300x400?text=Sin+Imagen';
+                    if (p.image_path) {
+                        const imgs = p.image_path.split(',');
+                        imgUrl = imgs[0].trim();
+                        if(imgUrl.startsWith('//')) imgUrl = 'https:' + imgUrl;
+                    }
+
+                    const card = `
+                        <div class="border rounded-xl bg-white p-4 flex flex-col card-hover relative group">
+                            <div class="h-48 flex items-center justify-center mb-4 overflow-hidden rounded-lg">
+                                <img src="${imgUrl}" alt="${p.name}" class="h-full object-contain group-hover:scale-110 transition duration-300">
+                            </div>
+                            <p class="text-xs font-bold text-pink-500 uppercase tracking-wide mb-1">${p.category}</p>
+                            <h3 class="font-bold text-gray-900 text-sm mb-2 line-clamp-2 leading-tight">${p.name}</h3>
+                            <div class="mt-auto flex items-center justify-between">
+                                <span class="text-lg font-bold text-gray-900">${parseFloat(p.precio).toFixed(2)} €</span>
+                                <a href="producto.html?id=${p.id}" class="bg-black text-white text-xs px-3 py-2 rounded hover:bg-pink-600 transition">Ver</a>
+                            </div>
+                        </div>
+                    `;
+                    container.innerHTML += card;
+                });
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('destacados-grid').innerHTML = '<p class="text-red-500 text-center col-span-full">Error cargando productos. Asegúrate de que productos.json existe.</p>';
+            });
+    </script>
+</body>
+</html>

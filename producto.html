@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalle Producto - ModaRopa</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .thumbnail.active { border-color: black; opacity: 1; }
+    </style>
+</head>
+<body class="bg-white text-gray-800 flex flex-col min-h-screen">
+
+    <header class="sticky top-0 bg-white shadow z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+            <a href="index.html" class="text-2xl font-extrabold tracking-wide text-black">MODAROPA</a>
+            <nav class="flex gap-6 text-sm font-medium">
+                <a href="index.html" class="hover:text-pink-600 transition">Inicio</a>
+                <a href="catalogo.html" class="hover:text-pink-600 transition">Catálogo</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 py-12 flex-grow">
+        <div id="product-container" class="hidden grid grid-cols-1 md:grid-cols-2 gap-10">
+            
+            <div>
+                <div class="border rounded-xl p-6 bg-white shadow-sm mb-4 flex items-center justify-center h-96 relative">
+                    <img id="main-image" src="" class="max-h-full object-contain transition-opacity duration-300">
+                </div>
+                <div id="thumbnails" class="flex gap-2 overflow-x-auto pb-2">
+                    </div>
+            </div>
+
+            <div>
+                <span id="p-category" class="text-pink-600 font-bold uppercase text-sm tracking-wider"></span>
+                <h1 id="p-name" class="text-3xl font-extrabold text-gray-900 mt-2 mb-4 leading-tight"></h1>
+                
+                <div class="flex items-center gap-4 mb-6">
+                    <span id="p-price" class="text-4xl font-bold text-gray-900"></span>
+                    <span class="bg-green-100 text-green-800 text-xs font-bold px-2 py-1 rounded">Disponible</span>
+                </div>
+
+                <div class="bg-gray-50 p-4 rounded-lg mb-6">
+                    <p class="text-sm text-gray-500 mb-1 font-bold">Descripción:</p>
+                    <p id="p-desc" class="text-gray-700 leading-relaxed"></p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 mb-8">
+                    <div>
+                        <span class="block text-xs font-bold text-gray-500 uppercase">Tallas</span>
+                        <p id="p-sizes" class="font-medium"></p>
+                    </div>
+                    <div>
+                        <span class="block text-xs font-bold text-gray-500 uppercase">Sexo</span>
+                        <p id="p-sex" class="font-medium"></p>
+                    </div>
+                </div>
+
+                <a id="btn-buy" href="#" target="_blank" class="block w-full bg-black text-white text-center py-4 rounded-xl font-bold text-lg uppercase hover:bg-pink-600 transition transform hover:-translate-y-1 shadow-lg">
+                    Comprar en Shein
+                </a>
+                <p class="text-center text-xs text-gray-400 mt-3">Serás redirigido a la página oficial del vendedor.</p>
+            </div>
+        </div>
+
+        <div id="loading" class="text-center py-20 text-xl font-bold text-gray-400">Cargando producto...</div>
+        <div id="error-msg" class="hidden text-center py-20">
+            <h2 class="text-2xl font-bold text-red-500 mb-4">Producto no encontrado</h2>
+            <a href="catalogo.html" class="text-black underline">Volver al catálogo</a>
+        </div>
+    </main>
+
+    <footer class="bg-gray-900 text-white mt-auto">
+        <div class="max-w-7xl mx-auto px-4 py-10 text-center text-sm text-gray-400">
+            <p>&copy; 2025 MODAROPA. Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Obtener ID de la URL (?id=12)
+        const params = new URLSearchParams(window.location.search);
+        const productId = parseInt(params.get('id'));
+
+        fetch('productos.json')
+            .then(res => res.json())
+            .then(data => {
+                const product = data.find(p => p.id === productId);
+                const loader = document.getElementById('loading');
+                const container = document.getElementById('product-container');
+                const errorMsg = document.getElementById('error-msg');
+
+                loader.style.display = 'none';
+
+                if (!product) {
+                    errorMsg.classList.remove('hidden');
+                    return;
+                }
+
+                container.classList.remove('hidden');
+
+                // Rellenar textos
+                document.getElementById('p-category').textContent = product.category;
+                document.getElementById('p-name').textContent = product.name;
+                document.getElementById('p-price').textContent = parseFloat(product.precio).toFixed(2) + " €";
+                document.getElementById('p-desc').textContent = product.description || "Sin descripción disponible.";
+                document.getElementById('p-sizes').textContent = product.tallas || "Única";
+                document.getElementById('p-sex').textContent = product.sexo || "Unisex";
+                document.getElementById('btn-buy').href = product.url;
+
+                // Manejo de Imágenes
+                const mainImg = document.getElementById('main-image');
+                const thumbContainer = document.getElementById('thumbnails');
+
+                let images = [];
+                if (product.image_path) {
+                    images = product.image_path.split(',').map(url => {
+                        let u = url.trim();
+                        if(u.startsWith('//')) return 'https:' + u;
+                        return u;
+                    });
+                } else {
+                    images = ['https://via.placeholder.com/600x800?text=Sin+Imagen'];
+                }
+
+                // Cargar imagen principal inicial
+                mainImg.src = images[0];
+
+                // Generar miniaturas si hay más de una imagen
+                if (images.length > 1) {
+                    images.forEach((img, index) => {
+                        const thumb = document.createElement('img');
+                        thumb.src = img;
+                        thumb.className = `w-16 h-16 object-cover border-2 rounded cursor-pointer transition ${index === 0 ? 'border-black' : 'border-transparent opacity-60 hover:opacity-100'}`;
+                        
+                        thumb.onclick = () => {
+                            mainImg.src = img;
+                            // Actualizar estilos activos
+                            Array.from(thumbContainer.children).forEach(c => {
+                                c.classList.remove('border-black');
+                                c.classList.add('border-transparent', 'opacity-60');
+                            });
+                            thumb.classList.remove('border-transparent', 'opacity-60');
+                            thumb.classList.add('border-black');
+                        };
+                        thumbContainer.appendChild(thumb);
+                    });
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                document.getElementById('loading').textContent = "Error al cargar los datos.";
+            });
+    </script>
+</body>
+</html>
