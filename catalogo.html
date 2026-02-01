@@ -25,7 +25,6 @@
         
         <div class="flex flex-col md:flex-row justify-between items-center mb-6">
             <h1 class="text-3xl font-bold text-gray-900">Catálogo</h1>
-            <span class="text-sm text-gray-500 mt-2 md:mt-0"></span>
         </div>
 
         <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 mb-10">
@@ -102,59 +101,30 @@
     <script>
         let allProducts = [];
 
-        // Cargar datos
+        // 1. Cargar datos
         fetch('productos.json')
             .then(res => res.json())
             .then(data => {
                 allProducts = data;
-                populateFilters(data);
+                // Inicializar filtros con todos los productos
+                updateDropdowns(data); 
                 calculatePriceRange(data);
                 renderProducts(data);
             })
             .catch(err => console.error("Error cargando JSON:", err));
 
-        // Rellenar selects dinámicamente
-        function populateFilters(data) {
-            const categories = new Set();
-            const sizes = new Set();
-            const sexes = new Set();
-
-            data.forEach(p => {
-                if(p.category) categories.add(p.category);
-                if(p.sexo) sexes.add(p.sexo);
-                if(p.tallas) {
-                    p.tallas.split(/[,-]/).forEach(t => sizes.add(t.trim()));
-                }
-            });
-
-            const fillSelect = (id, set) => {
-                const sel = document.getElementById(id);
-                sel.innerHTML = '<option value="">Todas</option>';
-                if(id === 'sex-select') sel.innerHTML = '<option value="">Todos</option>';
-                
-                Array.from(set).sort().forEach(val => {
-                    if(val) sel.innerHTML += `<option value="${val}">${val}</option>`;
-                });
-            };
-
-            fillSelect('cat-select', categories);
-            fillSelect('size-select', sizes);
-            fillSelect('sex-select', sexes);
-        }
-
-        // Calcular rango de precios para placeholders
+        // 2. Calcular placeholders de precio
         function calculatePriceRange(data) {
             const prices = data.map(p => parseFloat(p.precio));
             if (prices.length > 0) {
                 const min = Math.min(...prices);
                 const max = Math.max(...prices);
-                
                 document.getElementById('min-price').placeholder = Math.floor(min);
                 document.getElementById('max-price').placeholder = Math.ceil(max);
             }
         }
 
-        // Helper para convertir el input (con coma o punto) a número válido
+        // Helper para leer el precio del input
         function parsePriceInput(id) {
             let val = document.getElementById(id).value;
             if (!val) return NaN;
@@ -162,7 +132,81 @@
             return parseFloat(val);
         }
 
-        // Renderizar productos
+        // 3. Función inteligente para actualizar selects
+        // Mantiene la opción seleccionada si todavía existe tras filtrar por precio
+        function updateSelectOptions(id, products, field) {
+            const select = document.getElementById(id);
+            const currentValue = select.value; 
+
+            const uniqueValues = new Set();
+
+            products.forEach(p => {
+                if (field === 'tallas' && p.tallas) {
+                    p.tallas.split(/[,-]/).forEach(t => uniqueValues.add(t.trim()));
+                } else if (p[field]) {
+                    uniqueValues.add(p[field]);
+                }
+            });
+
+            // Resetear HTML del select
+            select.innerHTML = id === 'sex-select' ? '<option value="">Todos</option>' : '<option value="">Todas</option>';
+            
+            // Añadir opciones ordenadas
+            Array.from(uniqueValues).sort().forEach(val => {
+                select.innerHTML += `<option value="${val}">${val}</option>`;
+            });
+
+            // Restaurar selección o resetear si ya no existe
+            if (uniqueValues.has(currentValue)) {
+                select.value = currentValue;
+            } else {
+                select.value = ""; 
+            }
+        }
+
+        // Actualiza los 3 filtros a la vez
+        function updateDropdowns(productsForOptions) {
+            updateSelectOptions('cat-select', productsForOptions, 'category');
+            updateSelectOptions('size-select', productsForOptions, 'tallas');
+            updateSelectOptions('sex-select', productsForOptions, 'sexo');
+        }
+
+        // 4. FUNCIÓN PRINCIPAL DE FILTRADO
+        function filterProducts() {
+            const term = document.getElementById('search-input').value.toLowerCase();
+            let minP = parsePriceInput('min-price');
+            let maxP = parsePriceInput('max-price');
+            if (isNaN(minP)) minP = 0;
+            if (isNaN(maxP)) maxP = Infinity;
+
+            // PASO A: Filtrar solo por PRECIO y BÚSQUEDA
+            // Esto define qué productos están "disponibles" en este rango
+            const availableProducts = allProducts.filter(p => {
+                const productPrice = parseFloat(p.precio);
+                const matchName = p.name.toLowerCase().includes(term) || (p.description && p.description.toLowerCase().includes(term));
+                const matchPrice = productPrice >= minP && productPrice <= maxP;
+                return matchName && matchPrice;
+            });
+
+            // PASO B: Actualizar los desplegables basándose en los productos disponibles
+            updateDropdowns(availableProducts);
+
+            // PASO C: Aplicar los filtros de los desplegables (Categoría, Talla, Sexo)
+            const cat = document.getElementById('cat-select').value;
+            const size = document.getElementById('size-select').value;
+            const sex = document.getElementById('sex-select').value;
+
+            const finalFiltered = availableProducts.filter(p => {
+                const matchCat = cat === "" || p.category === cat;
+                const matchSex = sex === "" || p.sexo === sex;
+                const matchSize = size === "" || (p.tallas && p.tallas.includes(size));
+                return matchCat && matchSex && matchSize;
+            });
+
+            renderProducts(finalFiltered);
+        }
+
+        // 5. Renderizar tarjetas
         function renderProducts(products) {
             const container = document.getElementById('products-grid');
             const noRes = document.getElementById('no-results');
@@ -199,34 +243,6 @@
             });
         }
 
-        // Lógica de filtrado
-        function filterProducts() {
-            const term = document.getElementById('search-input').value.toLowerCase();
-            const cat = document.getElementById('cat-select').value;
-            const size = document.getElementById('size-select').value;
-            const sex = document.getElementById('sex-select').value;
-            
-            let minP = parsePriceInput('min-price');
-            let maxP = parsePriceInput('max-price');
-            
-            if (isNaN(minP)) minP = 0;
-            if (isNaN(maxP)) maxP = Infinity;
-
-            const filtered = allProducts.filter(p => {
-                const productPrice = parseFloat(p.precio);
-
-                const matchName = p.name.toLowerCase().includes(term) || (p.description && p.description.toLowerCase().includes(term));
-                const matchCat = cat === "" || p.category === cat;
-                const matchSex = sex === "" || p.sexo === sex;
-                const matchSize = size === "" || (p.tallas && p.tallas.includes(size));
-                const matchPrice = productPrice >= minP && productPrice <= maxP;
-
-                return matchName && matchCat && matchSex && matchSize && matchPrice;
-            });
-
-            renderProducts(filtered);
-        }
-
         // Event Listeners
         document.getElementById('search-input').addEventListener('input', filterProducts);
         document.getElementById('cat-select').addEventListener('change', filterProducts);
@@ -237,11 +253,14 @@
 
         function resetFilters() {
             document.getElementById('search-input').value = "";
+            document.getElementById('min-price').value = "";
+            document.getElementById('max-price').value = "";
             document.getElementById('cat-select').value = "";
             document.getElementById('size-select').value = "";
             document.getElementById('sex-select').value = "";
-            document.getElementById('min-price').value = "";
-            document.getElementById('max-price').value = "";
+            
+            // Volver a cargar opciones completas
+            updateDropdowns(allProducts);
             renderProducts(allProducts);
         }
     </script>
