@@ -166,5 +166,19 @@
         "sexo": "Mujer",
         "precio": 13.99,
         "created_at": "2026-02-02 13:17:54"
+    },
+    {
+        "id": 14,
+        "category": "Camisetas",
+        "name": "Manfinity",
+        "url": "https://onelink.shein.com/28/5f7gimakphch",
+        "description": "Manfinity LEGND Camisa casual de hombre con cuello en V, estampado de letras y lunares",
+        "image_path": "https://img.ltwebstatic.com/images3_pi/2025/04/07/7e/1744009081b603d09672776d7ef9936fa36431aa64_900x1200.webp,https://img.ltwebstatic.com/images3_pi/2025/02/20/c0/1740039920318d1cb96e11b2d4481a56d3ec1e36ad_900x1200.webp,https://img.ltwebstatic.com/images3_pi/2025/02/20/ae/17400399222c4aee14a43fab5ecfc06918fdb03e94_900x1200.webp,https://img.ltwebstatic.com/images3_pi/2025/02/20/7e/1740039924c5f687aac1b8f78b5526a47ca85e8765_900x1200.webp,https://sc.ltwebstatic.com/she_dist/images/bg-grey-solid-color-fc04c1310d.png",
+        "afiliado": "Shein",
+        "entradas": 0,
+        "tallas": "S-M-L-XL-XXL",
+        "sexo": "Mujer",
+        "precio": 6.64,
+        "created_at": "2026-02-02 13:21:04"
     }
 ]
