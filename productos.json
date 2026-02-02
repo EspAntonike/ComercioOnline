@@ -152,5 +152,19 @@
         "sexo": "Mujer",
         "precio": 5.99,
         "created_at": "2025-09-20 10:43:00"
+    },
+    {
+        "id": 13,
+        "category": "Camisetas",
+        "name": "Ellevyn",
+        "url": "https://onelink.shein.com/28/5f6oqjhme62n",
+        "description": "Ellevyn Set de 2 piezas de blusa elegante de mujer con hombros al descubierto y pantalón recto de pierna ancha",
+        "image_path": "https://img.ltwebstatic.com/v4/j/pi/2025/05/12/a4/17470153516e4affa52180d2775968d923da3d20f3_900x1200.webp,https://img.ltwebstatic.com/v4/j/pi/2025/05/12/48/1747015352d87169bd3829389503d44b59794965a8_900x1200.webp,https://img.ltwebstatic.com/v4/j/pi/2025/05/12/8c/17470153543cf3daaba51289e564729bfd0d7914b4_900x1200.webp,https://img.ltwebstatic.com/v4/j/pi/2025/05/12/be/17470153560fda22a668903f0179bbc2109fbb4865_900x1200.webp,https://img.ltwebstatic.com/v4/j/pi/2025/05/12/cc/17470153587cc0d2795c6823feadd122e5d8f83238_900x1200.webp,https://img.ltwebstatic.com/v4/j/pi/2025/05/12/13/1747015361295456ef58ea2ca17a62d6b1ebaa1b6e_900x1200.webp,https://img.ltwebstatic.com/v4/j/pi/2025/05/12/3b/17470153629df3eee2e935d57a7f00b20efcf48889_900x1200.webp",
+        "afiliado": "Shein",
+        "entradas": 0,
+        "tallas": "S-M-L-XL-MAS",
+        "sexo": "Mujer",
+        "precio": 13.99,
+        "created_at": "2026-02-02 13:17:54"
     }
 ]
